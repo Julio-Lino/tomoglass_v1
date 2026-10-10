@@ -1,14 +1,3 @@
-/**
- * ============================================================
- * TOMOGLASS - Servidor Node.js
- * Arquivo: /server.js
- * Node.js 18+ (usa fetch nativo)
- * ============================================================
- * Serve o frontend estático + API /api/orcamento
- * Para usar: npm install && npm start
- * ============================================================
- */
-
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -21,15 +10,12 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-// ----------------------------------------------------------
-// Configuração (variáveis de ambiente / .env)
-// ----------------------------------------------------------
 const config = {
   emailDestino: process.env.EMAIL_DESTINO || 'vendas@tomoglass.com.br',
   allowedOrigins: (process.env.CORS_ORIGINS || 'https://tomoglass.com.br,http://localhost:8000').split(',').map(s => s.trim()),
-  rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW || '3600000', 10), // 1 hora em ms
+  rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW || '3600000', 10),
   rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '5', 10),
-  maxFileSize: parseInt(process.env.MAX_FILE_SIZE || String(5 * 1024 * 1024), 10), // 5MB
+  maxFileSize: parseInt(process.env.MAX_FILE_SIZE || String(5 * 1024 * 1024), 10),
   recaptchaSecret: process.env.RECAPTCHA_SECRET || '',
   smtpHost: process.env.SMTP_HOST || '',
   smtpPort: parseInt(process.env.SMTP_PORT || '587', 10),
@@ -39,16 +25,11 @@ const config = {
   smtpFromName: process.env.SMTP_FROM_NAME || 'Tomoglass',
 };
 
-// ----------------------------------------------------------
-// Middleware
-// ----------------------------------------------------------
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS fechado: aceitar apenas o próprio domínio
 app.use(cors({
   origin: function (origin, callback) {
-    // Permite requisições sem Origin (mesmo servidor, apps locais)
     if (!origin) return callback(null, true);
     if (config.allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -61,7 +42,6 @@ app.use(cors({
   credentials: true,
 }));
 
-// Rate limiting: 5 requisições por IP por hora
 const limiter = rateLimit({
   windowMs: config.rateLimitWindow,
   max: config.rateLimitMax,
@@ -73,7 +53,6 @@ const limiter = rateLimit({
   },
 });
 
-// Multer: upload em memória (validação manual de MIME)
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
@@ -88,42 +67,33 @@ const upload = multer({
   },
 });
 
-// ----------------------------------------------------------
-// Helpers de segurança
-// ----------------------------------------------------------
-
-// Limpa campo: remove tags HTML, quebras de linha e protege contra injeção de cabeçalho
 function limparCampo(valor) {
   if (typeof valor !== 'string') return '';
   return valor
-    .replace(/<[^>]*>/g, '')           // remove tags HTML
-    .replace(/[\r\n]/g, '')            // remove quebras de linha (injeção)
-    .replace(/(Content-Type:|Bcc:|Cc:)/gi, '') // proteção contra injeção
+    .replace(/<[^>]*>/g, '')
+    .replace(/[\r\n]/g, '')
+    .replace(/(Content-Type:|Bcc:|Cc:)/gi, '')
     .trim();
 }
 
-// Escapa HTML para exibição segura
 function escaparHtml(str) {
   if (typeof str !== 'string') return '';
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
   return str.replace(/[&<>"']/g, (m) => map[m]);
 }
 
-// Valida telefone brasileiro (10-11 dígitos)
 function validarTelefone(telefone) {
   const digits = telefone.replace(/\D/g, '');
   return digits.length >= 10 && digits.length <= 11;
 }
 
-// Valida formato de e-mail
 function validarEmail(email) {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
 }
 
-// Verifica token reCAPTCHA v3
 async function verificarRecaptcha(token) {
-  if (!config.recaptchaSecret) return true; // captcha desabilitado
+  if (!config.recaptchaSecret) return true;
   if (!token) return false;
 
   try {
@@ -146,13 +116,12 @@ async function verificarRecaptcha(token) {
   }
 }
 
-// Cria transportador SMTP (se configurado)
 function criarTransporter() {
   if (!config.smtpHost) return null;
   return nodemailer.createTransport({
     host: config.smtpHost,
     port: config.smtpPort,
-    secure: config.smtpPort === 465, // 465 = SSL, 587 = TLS
+    secure: config.smtpPort === 465,
     auth: {
       user: config.smtpUser,
       pass: config.smtpPass,
@@ -160,14 +129,12 @@ function criarTransporter() {
   });
 }
 
-// Salva log protegido
 function salvarLog(entry) {
   const logDir = path.join(__dirname, 'api', 'logs');
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
 
-  // Protege diretório com .htaccess (caso esteja em hospedagem compartilhada)
   const htaccess = path.join(logDir, '.htaccess');
   if (!fs.existsSync(htaccess)) {
     fs.writeFileSync(htaccess, 'Deny from all\n');
@@ -177,25 +144,18 @@ function salvarLog(entry) {
   fs.appendFileSync(logFile, JSON.stringify(entry) + '\n');
 }
 
-// ----------------------------------------------------------
-// ENDPOINT: POST /api/orcamento
-// ----------------------------------------------------------
 app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => {
   try {
-    // ---------- Honeypot (anti-spam) ----------
     const honeypot = req.headers['x-honeypot'] || req.body.honeypot || '';
     if (honeypot) {
-      // Spam detectado - resposta silenciosa (não revela o honeypot)
       return res.status(200).json({ ok: true, message: 'Recebemos sua cotação.' });
     }
 
-    // ---------- reCAPTCHA v3 ----------
     const recaptchaOk = await verificarRecaptcha(req.body.recaptcha_token);
     if (!recaptchaOk) {
       return res.status(400).json({ ok: false, errors: { captcha: 'Verificação de segurança falhou.' } });
     }
 
-    // ---------- Validação e sanitização ----------
     const erros = {};
     const nome = limparCampo(req.body.nome || '');
     const empresa = limparCampo(req.body.empresa || '');
@@ -229,7 +189,6 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
       erros.lgpd = 'É necessário concordar com a Política de Privacidade.';
     }
 
-    // ---------- Validação do anexo ----------
     let anexo = null;
     if (req.file) {
       const ext = path.extname(req.file.originalname).toLowerCase().replace('.', '');
@@ -248,12 +207,10 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
       }
     }
 
-    // Erros de validação
     if (Object.keys(erros).length > 0) {
       return res.status(400).json({ ok: false, errors: erros });
     }
 
-    // ---------- Prepara dados do e-mail ----------
     const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
     const dataHora = new Date().toLocaleString('pt-BR');
     const assunto = `Novo orçamento - Tomoglass - ${peca}`;
@@ -270,7 +227,6 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
     corpo += `IP: ${ip}\n`;
     corpo += `User-Agent: ${limparCampo(req.headers['user-agent'] || '-')}\n`;
 
-    // ---------- Envio do e-mail ----------
     let enviado = false;
     const transporter = criarTransporter();
 
@@ -291,12 +247,10 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
         console.error('Erro SMTP:', err.message);
       }
     } else {
-      // Fallback: sem SMTP configurado, apenas log (em produção, configure SMTP)
       console.warn('SMTP não configurado. E-mail não enviado, apenas logado.');
-      enviado = true; // considera "enviado" para não frustrar o usuário em dev
+      enviado = true;
     }
 
-    // ---------- Resposta automática ao cliente ----------
     if (enviado && email && transporter) {
       try {
         const autoRes = {
@@ -311,7 +265,6 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
       }
     }
 
-    // ---------- Salva log protegido ----------
     salvarLog({
       data: dataHora,
       nome,
@@ -325,7 +278,6 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
       enviado,
     });
 
-    // ---------- Resposta ----------
     if (enviado) {
       res.status(200).json({
         ok: true,
@@ -341,7 +293,6 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
     }
   } catch (err) {
     console.error('Erro no endpoint:', err);
-    // Erro de multer (arquivo grande demais)
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ ok: false, errors: { anexo: 'Arquivo muito grande. Máximo de 5 MB.' } });
     }
@@ -349,19 +300,12 @@ app.post('/api/orcamento', limiter, upload.single('anexo'), async (req, res) => 
   }
 });
 
-// ----------------------------------------------------------
-// Serve arquivos estáticos (frontend)
-// ----------------------------------------------------------
 app.use(express.static(path.join(__dirname)));
 
-// Fallback: qualquer rota GET serve o index.html (SPA simples)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// ----------------------------------------------------------
-// Inicia o servidor
-// ----------------------------------------------------------
 app.listen(PORT, () => {
   console.log('========================================');
   console.log('  Tomoglass - Servidor Node.js');

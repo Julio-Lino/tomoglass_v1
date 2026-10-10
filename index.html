@@ -28,8 +28,8 @@
     },
     "geo": {
       "@type": "GeoCoordinates",
-      "latitude": -23.461784,
-      "longitude": -46.533322
+      "latitude": -23.447488,
+      "longitude": -46.460918
     },
     "openingHoursSpecification": [
       {
@@ -73,22 +73,7 @@
           </div>
         </div>
         <div class="stage in3">
-          <div class="ph" data-foto="hero" data-alt="Ônibus com peças em fibra de vidro Tomoglass"><span>
-            <svg class="bus" viewBox="0 0 640 400" role="img" aria-label="Ilustração técnica de um ônibus">
-              <g fill="none" stroke="#7fb5ee" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
-                <path d="M40 280V130Q40 90 82 90H520Q585 90 600 150L610 230V280Z" fill="rgba(47,127,208,.14)"/>
-                <rect x="70" y="112" width="86" height="64" rx="6"/><rect x="170" y="112" width="86" height="64" rx="6"/><rect x="270" y="112" width="86" height="64" rx="6"/><rect x="370" y="112" width="86" height="64" rx="6"/>
-                <path d="M475 112H540Q568 112 576 150L582 176H475Z"/>
-                <rect x="470" y="190" width="40" height="74" rx="4"/>
-                <path d="M40 232H610" stroke="#f2a900"/>
-                <path d="M40 280H610" /><path d="M600 262H620"/>
-              </g>
-              <g>
-                <g class="wheel"><circle cx="150" cy="288" r="40" fill="#08121c" stroke="#7fb5ee" stroke-width="2"/><path d="M150 258V318M120 288H180M129 267L171 309M171 267L129 309" stroke="#7fb5ee" stroke-width="2"/></g>
-                <g class="wheel"><circle cx="500" cy="288" r="40" fill="#08121c" stroke="#7fb5ee" stroke-width="2"/><path d="M500 258V318M470 288H530M479 267L521 309M521 267L479 309" stroke="#7fb5ee" stroke-width="2"/></g>
-              </g>
-              <line class="road" x1="0" y1="338" x2="640" y2="338" stroke="#7fb5ee" stroke-width="3"/>
-            </svg></span></div>
+          <div class="ph" id="hero-video" data-alt="Vídeo da empresa Tomoglass"><span>Vídeo da empresa</span></div>
         </div>
       </div>
     </section>
@@ -172,7 +157,7 @@
             <div class="t"><h3>Acabamentos e complementos</h3><p>Detalhes que completam a carroceria.</p></div>
           </article>
         </div>
-        <p class="rv" style="margin-top:34px"><a class="btn" href="https://tomoglass.com.br/produtos.php">Ver catálogo completo</a></p>
+        <p class="rv" style="margin-top:34px"><a class="btn" id="btn-catalogo" href="#produtos">Ver catálogo completo</a></p>
       </div>
     </section>
 
@@ -247,8 +232,8 @@
               <p><strong>Horário de funcionamento:</strong> <span id="horario-funcionamento">Segunda a sexta, 08h às 17h</span></p>
             </address>
             <div class="mapa-botoes">
-              <a class="btn" id="btn-como-chegar" href="https://www.google.com/maps/dir/?api=1&destination=Rua%20Manoel%20Alonso%20Almendra%20146%20Jardim%20das%20Na%C3%A7%C3%B5es%20Guarulhos%20SP%2007182-120" target="_blank" rel="noopener">Como chegar</a>
-              <a class="btn o" id="btn-abrir-maps" href="https://www.google.com/maps/search/?api=1&query=Rua%20Manoel%20Alonso%20Almendra%20146%20Jardim%20das%20Na%C3%A7%C3%B5es%20Guarulhos%20SP%2007182-120" target="_blank" rel="noopener">Abrir no Google Maps</a>
+              <a class="btn" id="btn-como-chegar" href="https://www.google.com/maps/dir/?api=1&destination=-23.447488%2C-46.460918" target="_blank" rel="noopener">Como chegar</a>
+              <a class="btn o" id="btn-abrir-maps" href="https://www.google.com/maps/search/?api=1&query=-23.447488%2C-46.460918" target="_blank" rel="noopener">Abrir no Google Maps</a>
             </div>
           </div>
         </div>
@@ -278,7 +263,6 @@
     </div>
   </footer>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
 </html>
